@@ -18,6 +18,7 @@ from app.ai.prompts import (
 )
 from app.core.config import settings
 from app.schemas.reflection import (
+    OptionsResponse,
     PossibleResponse,
     StructuredReflectionState,
 )
@@ -200,18 +201,10 @@ class GeminiProvider(BaseAIProvider):
             f"{GENERATE_OPTIONS_INSTRUCTION}"
         )
 
-        class OptionsPayload(
-            types.BaseModel if hasattr(types, "BaseModel") else StructuredReflectionState
-        ):
-            pass
-
-        # We can also call analyze or use a structured container schema:
-        # Instead of separate ad-hoc schema, return options via StructuredReflectionState or list
-        # For full safety, we can request full reflection state or options list
         config = types.GenerateContentConfig(
-            system_instruction=INITIAL_ANALYSIS_SYSTEM_INSTRUCTION,
+            system_instruction=GENERATE_OPTIONS_INSTRUCTION,
             response_mime_type="application/json",
-            response_schema=StructuredReflectionState,
+            response_schema=OptionsResponse,
             temperature=0.3,
         )
 
@@ -224,7 +217,9 @@ class GeminiProvider(BaseAIProvider):
                 ),
                 timeout=30.0,
             )
-            parsed = StructuredReflectionState.model_validate_json(response.text)
+            if not response.text:
+                raise AIProviderValidationError("Gemini returned empty response for options.")
+            parsed = OptionsResponse.model_validate_json(response.text)
             return parsed.possible_responses
         except Exception as e:
             logger.error(f"Failed to generate options: {e}")

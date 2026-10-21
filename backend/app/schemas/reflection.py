@@ -50,6 +50,12 @@ class PossibleResponse(BaseModel):
     )
 
 
+class OptionsResponse(BaseModel):
+    possible_responses: list[PossibleResponse] = Field(
+        default_factory=list, description="List of generated possible next responses"
+    )
+
+
 class Connection(BaseModel):
     source: str = Field(..., description="Source node id")
     target: str = Field(..., description="Target node id")

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { CompletionRecap } from '../components/reflection/CompletionRecap';
 import { ReflectionSession } from '../types';
@@ -101,7 +101,9 @@ describe('CompletionRecap Component', () => {
       </BrowserRouter>
     );
 
-    await fireEvent.click(screen.getByText('Save to History'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save to History'));
+    });
     expect(onSave).toHaveBeenCalled();
   });
 });

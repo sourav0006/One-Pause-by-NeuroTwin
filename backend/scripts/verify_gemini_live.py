@@ -28,7 +28,7 @@ async def main():
         )
         sys.exit(1)
 
-    print(f"[+] Found GEMINI_API_KEY (starts with {api_key[:6]}...)")
+    print("[+] Found GEMINI_API_KEY (configured, redacted)")
     print(f"[+] Configured Model: {settings.GEMINI_MODEL}")
 
     provider = GeminiProvider(api_key=api_key)
