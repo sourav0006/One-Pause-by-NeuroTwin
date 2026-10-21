@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Sparkles, Send, Info } from 'lucide-react';
+import { apiClient } from '../api/client';
+import { ReflectionSession } from '../types';
+import { ArrowLeft, Sparkles, Send, Info, AlertCircle } from 'lucide-react';
 
 const EXAMPLE_SITUATION =
   "My manager has given me another task, but I'm already overloaded. I want to say yes because I don't want to disappoint him.";
@@ -10,13 +12,38 @@ export const SituationEntryPage: React.FC = () => {
   const [situation, setSituation] = useState('');
   const [optionalContext, setOptionalContext] = useState('');
   const [showOptionalContext, setShowOptionalContext] = useState(false);
-  const [isLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!situation.trim() || situation.trim().length < 10) return;
-    // In Phase 2, this triggers real AI analysis endpoint POST /reflections/analyze
-    alert('Situation submitted. AI analysis engine integration is scheduled in Phase 2.');
+    if (!situation.trim() || situation.trim().length < 10 || isLoading) return;
+
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const res = await apiClient.post<ReflectionSession>('/reflections/analyze', {
+        situation: situation.trim(),
+        context: optionalContext.trim() || undefined,
+      });
+
+      // Navigate to the newly generated reflection map
+      navigate(`/reflections/${res.data.id}`);
+    } catch (err: any) {
+      const detail = err.response?.data?.detail;
+      if (typeof detail === 'object' && detail?.message) {
+        setErrorMessage(detail.message);
+      } else if (typeof detail === 'string') {
+        setErrorMessage(detail);
+      } else {
+        setErrorMessage(
+          'Failed to analyze reflection. Please check AI provider configuration or network connection.'
+        );
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -37,6 +64,16 @@ export const SituationEntryPage: React.FC = () => {
           What is currently happening? Write what occurred or what is causing hesitation in your own words.
         </p>
       </div>
+
+      {errorMessage && (
+        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-start gap-3">
+          <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <strong>Analysis Error:</strong>
+            <p>{errorMessage}</p>
+          </div>
+        </div>
+      )}
 
       <div className="paper-card p-6 sm:p-8 bg-white shadow-sm space-y-6">
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -62,7 +99,8 @@ export const SituationEntryPage: React.FC = () => {
               required
               minLength={10}
               maxLength={4000}
-              className="w-full p-3.5 text-sm rounded-lg border border-paper-300 bg-paper-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-sage-700 focus:border-sage-700 leading-relaxed transition-colors"
+              disabled={isLoading}
+              className="w-full p-3.5 text-sm rounded-lg border border-paper-300 bg-paper-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-sage-700 focus:border-sage-700 leading-relaxed transition-colors disabled:opacity-60"
             />
             <div className="flex justify-between text-[11px] text-charcoal-400">
               <span>Minimum 10 characters</span>
@@ -102,6 +140,7 @@ export const SituationEntryPage: React.FC = () => {
                   placeholder="e.g. Protecting my professional reputation is a key concern for me..."
                   rows={2}
                   maxLength={1000}
+                  disabled={isLoading}
                   className="w-full p-2.5 text-xs rounded border border-paper-300 bg-white focus:outline-none focus:ring-1 focus:ring-sage-700"
                 />
               </div>
@@ -110,7 +149,7 @@ export const SituationEntryPage: React.FC = () => {
 
           {/* Notice */}
           <div className="p-3 rounded-lg bg-paper-100/50 border border-paper-200 text-[11px] text-charcoal-500 leading-normal">
-            <strong>Privacy Note:</strong> Your text is processed to generate structured reflective nodes. It will not be permanently saved unless you explicitly click "Save reflection" at the end of the session.
+            <strong>Privacy & AI Disclosure:</strong> Your text is processed with Google Gemini structured reflection prompts to map facts, tentative hypotheses, and unknowns. It will not be permanently stored in user history unless you explicitly click "Save reflection".
           </div>
 
           <button
@@ -118,8 +157,17 @@ export const SituationEntryPage: React.FC = () => {
             disabled={isLoading || situation.trim().length < 10}
             className="w-full py-3 px-5 rounded-xl bg-charcoal-900 text-paper-50 text-sm font-medium hover:bg-charcoal-800 disabled:opacity-40 transition-colors flex items-center justify-center gap-2 shadow-sm"
           >
-            <Send className="w-4 h-4 text-sage-300" />
-            <span>Generate Reflection Map</span>
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Reflecting on situation & generating map...</span>
+              </div>
+            ) : (
+              <>
+                <Send className="w-4 h-4 text-sage-300" />
+                <span>Generate Reflection Map</span>
+              </>
+            )}
           </button>
         </form>
       </div>

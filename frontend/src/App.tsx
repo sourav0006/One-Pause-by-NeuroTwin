@@ -8,6 +8,7 @@ import { WelcomePage } from './pages/WelcomePage';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { SituationEntryPage } from './pages/SituationEntryPage';
+import { ReflectionViewPage } from './pages/ReflectionViewPage';
 
 export const App: React.FC = () => {
   return (
@@ -32,6 +33,14 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute>
                     <SituationEntryPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reflections/:id"
+                element={
+                  <ProtectedRoute>
+                    <ReflectionViewPage />
                   </ProtectedRoute>
                 }
               />

@@ -6,7 +6,9 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 class UserRegisterRequest(BaseModel):
     email: EmailStr
-    password: str = Field(..., min_length=8, max_length=128, description="Password must be at least 8 characters")
+    password: str = Field(
+        ..., min_length=8, max_length=128, description="Password must be at least 8 characters"
+    )
 
 
 class UserLoginRequest(BaseModel):

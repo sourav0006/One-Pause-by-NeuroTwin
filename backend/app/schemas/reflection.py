@@ -45,7 +45,9 @@ class PossibleResponse(BaseModel):
     action: str = Field(..., description="Distinct, balanced action step")
     benefits: list[str] = Field(default_factory=list, description="Potential advantages")
     risks: list[str] = Field(default_factory=list, description="Potential trade-offs or costs")
-    appropriate_when: str = Field(..., description="Circumstances under which this choice fits best")
+    appropriate_when: str = Field(
+        ..., description="Circumstances under which this choice fits best"
+    )
 
 
 class Connection(BaseModel):
@@ -67,12 +69,18 @@ class StructuredReflectionState(BaseModel):
 
 # Request and Response schemas
 class AnalyzeRequest(BaseModel):
-    situation: str = Field(..., min_length=10, max_length=4000, description="The situation in user's words")
-    context: str | None = Field(None, max_length=1000, description="Optional personal or contextual detail")
+    situation: str = Field(
+        ..., min_length=10, max_length=4000, description="The situation in user's words"
+    )
+    context: str | None = Field(
+        None, max_length=1000, description="Optional personal or contextual detail"
+    )
 
 
 class ClarifyRequest(BaseModel):
-    answer: str = Field(..., min_length=1, max_length=2000, description="User's answer to the follow-up question")
+    answer: str = Field(
+        ..., min_length=1, max_length=2000, description="User's answer to the follow-up question"
+    )
 
 
 class HypothesisUpdateRequest(BaseModel):

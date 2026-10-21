@@ -1,8 +1,8 @@
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import auth, health
+from app.api.routes import auth, health, reflections
 from app.core.config import settings
 
 app = FastAPI(
@@ -26,11 +26,22 @@ app.add_middleware(
 # Register routers
 app.include_router(health.router, prefix=settings.API_V1_STR)
 app.include_router(auth.router, prefix=settings.API_V1_STR)
+app.include_router(reflections.router, prefix=settings.API_V1_STR)
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Pass through structured HTTP exceptions."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=exc.headers,
+    )
 
 
 @app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    # Avoid leaking internal stack traces (PRD §10.3)
+async def generic_exception_handler(request: Request, exc: Exception):
+    """Sanitize unexpected internal exceptions to avoid leaking stack traces (PRD §10.3)."""
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
