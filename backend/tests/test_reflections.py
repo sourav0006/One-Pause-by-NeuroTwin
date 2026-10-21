@@ -344,3 +344,80 @@ async def test_session_ownership_and_deletion(
     assert get_del.status_code == 404
 
     app.dependency_overrides.pop(get_ai_provider, None)
+
+
+@pytest.mark.asyncio
+async def test_saved_vs_unsaved_isolation(client: AsyncClient, auth_headers: dict):
+    mock_provider = MockAIProvider()
+    app.dependency_overrides[get_ai_provider] = lambda: mock_provider
+
+    # 1. Create a reflection (default is unsaved)
+    init_res = await client.post(
+        "/api/v1/reflections/analyze",
+        json={"situation": "Testing unsaved vs saved privacy."},
+        headers=auth_headers,
+    )
+    assert init_res.status_code == 201
+    session_id = init_res.json()["id"]
+    assert init_res.json()["is_saved"] is False
+
+    # 2. GET /reflections must NOT list unsaved session (PRD §7 FR-10 & §12.2)
+    list_before = await client.get("/api/v1/reflections", headers=auth_headers)
+    assert list_before.status_code == 200
+    assert not any(s["id"] == session_id for s in list_before.json())
+
+    # 3. Explicitly save session
+    save_res = await client.post(
+        f"/api/v1/reflections/{session_id}/save",
+        json={"title": "Now Explicitly Saved"},
+        headers=auth_headers,
+    )
+    assert save_res.status_code == 200
+    assert save_res.json()["is_saved"] is True
+
+    # 4. GET /reflections now lists the session
+    list_after = await client.get("/api/v1/reflections", headers=auth_headers)
+    assert list_after.status_code == 200
+    assert any(s["id"] == session_id for s in list_after.json())
+
+    app.dependency_overrides.pop(get_ai_provider, None)
+
+
+@pytest.mark.asyncio
+async def test_completion_with_and_without_selected_response(
+    client: AsyncClient, auth_headers: dict
+):
+    mock_provider = MockAIProvider()
+    app.dependency_overrides[get_ai_provider] = lambda: mock_provider
+
+    # 1. Create reflection
+    init_res = await client.post(
+        "/api/v1/reflections/analyze",
+        json={"situation": "Examining completion workflow with trade-offs."},
+        headers=auth_headers,
+    )
+    session_id = init_res.json()["id"]
+
+    # 2. Complete WITHOUT selecting option (PRD §7 FR-08 & FR-09)
+    comp_no_opt = await client.post(
+        f"/api/v1/reflections/{session_id}/complete",
+        json={},
+        headers=auth_headers,
+    )
+    assert comp_no_opt.status_code == 200
+    assert comp_no_opt.json()["status"] == "completed"
+    assert comp_no_opt.json()["selected_response_id"] is None
+    assert comp_no_opt.json()["completed_at"] is not None
+    # Completion does not make it permanently saved without explicit user save
+    assert comp_no_opt.json()["is_saved"] is False
+
+    # 3. Complete WITH selected option
+    comp_with_opt = await client.post(
+        f"/api/v1/reflections/{session_id}/complete",
+        json={"selected_option_id": "option_1"},
+        headers=auth_headers,
+    )
+    assert comp_with_opt.status_code == 200
+    assert comp_with_opt.json()["selected_response_id"] == "option_1"
+
+    app.dependency_overrides.pop(get_ai_provider, None)

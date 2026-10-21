@@ -5,6 +5,7 @@ Usage:
     export GEMINI_API_KEY="your-actual-api-key"
     python scripts/verify_gemini_live.py
 """
+
 import asyncio
 import os
 import sys
@@ -22,7 +23,9 @@ async def main():
     api_key = os.environ.get("GEMINI_API_KEY") or settings.GEMINI_API_KEY
     if not api_key:
         print("[-] GEMINI_API_KEY is not configured.")
-        print("    Please set GEMINI_API_KEY in your environment or backend/.env to run live calls.")
+        print(
+            "    Please set GEMINI_API_KEY in your environment or backend/.env to run live calls."
+        )
         sys.exit(1)
 
     print(f"[+] Found GEMINI_API_KEY (starts with {api_key[:6]}...)")
@@ -35,7 +38,7 @@ async def main():
     )
     context = "I am concerned about protecting my professional reputation."
 
-    print(f"\n[+] Sending situation for analysis:\n    \"{situation}\"")
+    print(f'\n[+] Sending situation for analysis:\n    "{situation}"')
     try:
         state = await provider.analyze_situation(situation=situation, context=context)
         print("\n[+] Success! Validated Structured Reflection State received:")

@@ -35,6 +35,15 @@ class ReflectionSession(Base):
         default="in_progress",
         nullable=False,
     )
+    is_saved: Mapped[bool] = mapped_column(
+        default=False,
+        server_default="false",
+        nullable=False,
+    )
+    selected_response_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
     initial_situation: Mapped[str] = mapped_column(
         Text,
         nullable=False,

@@ -101,6 +101,8 @@ class ReflectionResponse(BaseModel):
     id: uuid.UUID
     initial_situation: str
     status: str
+    is_saved: bool = False
+    selected_response_id: str | None = None
     title: str | None = None
     state: StructuredReflectionState
     created_at: datetime
@@ -113,6 +115,8 @@ class SessionSummaryResponse(BaseModel):
     title: str | None = None
     initial_situation: str
     status: str
+    is_saved: bool = False
+    selected_response_id: str | None = None
     created_at: datetime
     updated_at: datetime
     completed_at: datetime | None = None

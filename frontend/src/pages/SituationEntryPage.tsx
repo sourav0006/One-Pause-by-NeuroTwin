@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import { ReflectionSession } from '../types';
+import { BrainToMapTransition } from '../components/common/BrainToMapTransition';
 import { ArrowLeft, Sparkles, Send, Info, AlertCircle } from 'lucide-react';
 
 const EXAMPLE_SITUATION =
@@ -28,7 +29,7 @@ export const SituationEntryPage: React.FC = () => {
         context: optionalContext.trim() || undefined,
       });
 
-      // Navigate to the newly generated reflection map
+      // Smooth transition to reflection map
       navigate(`/reflections/${res.data.id}`);
     } catch (err: any) {
       const detail = err.response?.data?.detail;
@@ -45,6 +46,16 @@ export const SituationEntryPage: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center py-12 px-4 sm:px-6">
+        <div className="paper-card p-8 sm:p-12 max-w-lg w-full bg-white text-center shadow-md">
+          <BrainToMapTransition statusMessage="Examining situation with Gemini reflection engine and structuring the network..." />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 py-10 px-4 sm:px-6 max-w-3xl mx-auto w-full space-y-6">
@@ -157,17 +168,8 @@ export const SituationEntryPage: React.FC = () => {
             disabled={isLoading || situation.trim().length < 10}
             className="w-full py-3 px-5 rounded-xl bg-charcoal-900 text-paper-50 text-sm font-medium hover:bg-charcoal-800 disabled:opacity-40 transition-colors flex items-center justify-center gap-2 shadow-sm"
           >
-            {isLoading ? (
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>Reflecting on situation & generating map...</span>
-              </div>
-            ) : (
-              <>
-                <Send className="w-4 h-4 text-sage-300" />
-                <span>Generate Reflection Map</span>
-              </>
-            )}
+            <Send className="w-4 h-4 text-sage-300" />
+            <span>Generate Reflection Map</span>
           </button>
         </form>
       </div>

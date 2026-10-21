@@ -74,6 +74,8 @@ export interface ReflectionSession {
   id: string;
   initial_situation: string;
   status: 'in_progress' | 'completed';
+  is_saved: boolean;
+  selected_response_id?: string;
   title?: string;
   state: StructuredReflectionState;
   created_at: string;
@@ -86,6 +88,8 @@ export interface SessionSummary {
   title?: string;
   initial_situation: string;
   status: string;
+  is_saved: boolean;
+  selected_response_id?: string;
   created_at: string;
   updated_at: string;
   completed_at?: string;

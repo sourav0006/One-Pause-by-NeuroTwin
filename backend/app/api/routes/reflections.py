@@ -91,11 +91,13 @@ async def analyze_situation(
     # Derive short title from encounter description
     title = structured_state.encounter.description[:80] if structured_state.encounter else None
 
-    # Persist session in PostgreSQL
+    # Persist session in PostgreSQL (unsaved by default until explicit save)
     session = ReflectionSession(
         user_id=current_user.id,
         title=title,
         status="in_progress",
+        is_saved=False,
+        selected_response_id=None,
         initial_situation=req.situation.strip(),
         current_state=structured_state.model_dump(),
     )
@@ -107,6 +109,8 @@ async def analyze_situation(
         id=session.id,
         initial_situation=session.initial_situation,
         status=session.status,
+        is_saved=session.is_saved,
+        selected_response_id=session.selected_response_id,
         title=session.title,
         state=structured_state,
         created_at=session.created_at,
@@ -146,6 +150,8 @@ async def clarify_reflection(
         id=session.id,
         initial_situation=session.initial_situation,
         status=session.status,
+        is_saved=session.is_saved,
+        selected_response_id=session.selected_response_id,
         title=session.title,
         state=updated_state,
         created_at=session.created_at,
@@ -192,6 +198,8 @@ async def update_hypothesis(
         id=session.id,
         initial_situation=session.initial_situation,
         status=session.status,
+        is_saved=session.is_saved,
+        selected_response_id=session.selected_response_id,
         title=session.title,
         state=state,
         created_at=session.created_at,
@@ -227,6 +235,8 @@ async def refresh_options(
         id=session.id,
         initial_situation=session.initial_situation,
         status=session.status,
+        is_saved=session.is_saved,
+        selected_response_id=session.selected_response_id,
         title=session.title,
         state=state,
         created_at=session.created_at,
@@ -242,9 +252,11 @@ async def complete_reflection(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Mark a reflection as completed without requiring permanent persistence."""
+    """Mark a reflection as completed without forcing permanent persistence."""
     session = await _get_user_session(session_id, current_user.id, db)
     session.status = "completed"
+    if req.selected_option_id:
+        session.selected_response_id = req.selected_option_id
     session.completed_at = datetime.now(UTC)
     session.updated_at = datetime.now(UTC)
 
@@ -256,6 +268,8 @@ async def complete_reflection(
         id=session.id,
         initial_situation=session.initial_situation,
         status=session.status,
+        is_saved=session.is_saved,
+        selected_response_id=session.selected_response_id,
         title=session.title,
         state=state,
         created_at=session.created_at,
@@ -273,6 +287,7 @@ async def save_reflection(
 ):
     """Explicitly save the reflection session for permanent retention in user history."""
     session = await _get_user_session(session_id, current_user.id, db)
+    session.is_saved = True
     if req.title and req.title.strip():
         session.title = req.title.strip()
     session.updated_at = datetime.now(UTC)
@@ -285,6 +300,8 @@ async def save_reflection(
         id=session.id,
         initial_situation=session.initial_situation,
         status=session.status,
+        is_saved=session.is_saved,
+        selected_response_id=session.selected_response_id,
         title=session.title,
         state=state,
         created_at=session.created_at,
@@ -298,10 +315,13 @@ async def list_reflections(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """List all saved reflection sessions belonging to the authenticated user."""
+    """List explicitly saved reflection sessions belonging to the authenticated user."""
     stmt = (
         select(ReflectionSession)
-        .where(ReflectionSession.user_id == current_user.id)
+        .where(
+            ReflectionSession.user_id == current_user.id,
+            ReflectionSession.is_saved.is_(True),
+        )
         .order_by(desc(ReflectionSession.updated_at))
     )
     result = await db.execute(stmt)
@@ -313,6 +333,8 @@ async def list_reflections(
             title=s.title,
             initial_situation=s.initial_situation,
             status=s.status,
+            is_saved=s.is_saved,
+            selected_response_id=s.selected_response_id,
             created_at=s.created_at,
             updated_at=s.updated_at,
             completed_at=s.completed_at,
@@ -335,6 +357,8 @@ async def get_reflection(
         id=session.id,
         initial_situation=session.initial_situation,
         status=session.status,
+        is_saved=session.is_saved,
+        selected_response_id=session.selected_response_id,
         title=session.title,
         state=state,
         created_at=session.created_at,
@@ -349,7 +373,7 @@ async def delete_reflection(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Delete a saved reflection session."""
+    """Delete a reflection session."""
     session = await _get_user_session(session_id, current_user.id, db)
     await db.delete(session)
     await db.flush()
