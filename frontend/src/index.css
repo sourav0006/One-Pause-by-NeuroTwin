@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #FAF8F4;
+    color: #1A1D1F;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  h1, h2, h3, .font-serif {
+    font-family: 'Lora', Georgia, serif;
+  }
+}
+
+/* Custom subtle parchment texture & map background */
+.bg-paper-grid {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(100, 133, 114, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(100, 133, 114, 0.04) 1px, transparent 1px);
+}
+
+/* Subtle card styling */
+.paper-card {
+  background-color: #FFFFFF;
+  border: 1px solid #ECE7DD;
+  box-shadow: 0 2px 8px -2px rgba(26, 29, 31, 0.04), 0 1px 4px -1px rgba(26, 29, 31, 0.02);
+  border-radius: 12px;
+}
+
+.paper-card-interactive {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.paper-card-interactive:hover {
+  border-color: #B5A994;
+  box-shadow: 0 6px 16px -4px rgba(26, 29, 31, 0.08), 0 2px 6px -1px rgba(26, 29, 31, 0.04);
+}
