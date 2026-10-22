@@ -1,4 +1,4 @@
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -38,6 +38,18 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-2.5-flash"
     ENABLE_DEV_DEMO_AI: bool = False
+
+    @model_validator(mode="after")
+    def validate_production_secrets(self) -> "Settings":
+        if self.ENVIRONMENT == "production" and (
+            not self.JWT_SECRET_KEY
+            or self.JWT_SECRET_KEY == "one-pause-local-mvp-secret-key-change-in-production-only"
+            or len(self.JWT_SECRET_KEY) < 32
+        ):
+            raise ValueError(
+                "JWT_SECRET_KEY must be set to a secure, unique secret of at least 32 characters in production."
+            )
+        return self
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

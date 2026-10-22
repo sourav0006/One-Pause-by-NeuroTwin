@@ -10,10 +10,16 @@ class UserRegisterRequest(BaseModel):
         ..., min_length=8, max_length=128, description="Password must be at least 8 characters"
     )
 
+    model_config = ConfigDict(extra="forbid")
+
 
 class UserLoginRequest(BaseModel):
     email: EmailStr
-    password: str = Field(..., min_length=1)
+    password: str = Field(
+        ..., min_length=1, max_length=128, description="Password for authentication"
+    )
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class UserResponse(BaseModel):

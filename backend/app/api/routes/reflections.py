@@ -130,6 +130,11 @@ async def clarify_reflection(
 ):
     """Incorporate clarification answer into reflection state and update map."""
     session = await _get_user_session(session_id, current_user.id, db)
+    if session.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot clarify a completed reflection session",
+        )
 
     current_state = StructuredReflectionState.model_validate(session.current_state)
 
@@ -212,6 +217,11 @@ async def update_hypothesis(
 ):
     """Mark a hypothesis as active, corrected, or dismissed."""
     session = await _get_user_session(session_id, current_user.id, db)
+    if session.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot modify hypotheses on a completed reflection session",
+        )
 
     state = StructuredReflectionState.model_validate(session.current_state)
     found = False
@@ -259,6 +269,11 @@ async def refresh_options(
 ):
     """Generate or refresh balanced response options for this reflection."""
     session = await _get_user_session(session_id, current_user.id, db)
+    if session.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot refresh options for a completed reflection session",
+        )
     state = StructuredReflectionState.model_validate(session.current_state)
 
     try:
@@ -296,13 +311,20 @@ async def complete_reflection(
 ):
     """Mark a reflection as completed without forcing permanent persistence."""
     session = await _get_user_session(session_id, current_user.id, db)
-    session.status = "completed"
+    state = StructuredReflectionState.model_validate(session.current_state)
+
     if req.selected_option_id:
+        valid_ids = {opt.id for opt in state.possible_responses}
+        if req.selected_option_id not in valid_ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Selected option ID '{req.selected_option_id}' does not exist in this reflection.",
+            )
         session.selected_response_id = req.selected_option_id
+
+    session.status = "completed"
     session.completed_at = datetime.now(UTC)
     session.updated_at = datetime.now(UTC)
-
-    state = StructuredReflectionState.model_validate(session.current_state)
     await db.flush()
     await db.refresh(session)
 

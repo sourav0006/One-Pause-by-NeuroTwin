@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Encounter(BaseModel):
@@ -82,25 +82,35 @@ class AnalyzeRequest(BaseModel):
         None, max_length=1000, description="Optional personal or contextual detail"
     )
 
+    model_config = ConfigDict(extra="forbid")
+
 
 class ClarifyRequest(BaseModel):
     answer: str = Field(
         ..., min_length=1, max_length=2000, description="User's answer to the follow-up question"
     )
 
+    model_config = ConfigDict(extra="forbid")
+
 
 class HypothesisUpdateRequest(BaseModel):
     status: Literal["active", "corrected", "dismissed"]
     corrected_text: str | None = Field(None, max_length=500)
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class CompleteRequest(BaseModel):
     selected_option_id: str | None = None
     custom_response: str | None = Field(None, max_length=2000)
 
+    model_config = ConfigDict(extra="forbid")
+
 
 class SaveSessionRequest(BaseModel):
     title: str | None = Field(None, max_length=255)
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class ReflectionResponse(BaseModel):

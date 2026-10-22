@@ -38,7 +38,12 @@ def create_access_token(subject: str | Any, expires_delta: timedelta | None = No
 def decode_access_token(token: str) -> dict | None:
     """Decode and validate a JWT access token."""
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        payload = jwt.decode(
+            token,
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
+            options={"require": ["exp", "sub"]},
+        )
         return payload
     except (jwt.PyJWTError, Exception):
         return None
