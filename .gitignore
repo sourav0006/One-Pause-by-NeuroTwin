@@ -37,6 +37,7 @@ yarn-error.log*
 frontend/dist/
 frontend/dist-ssr/
 frontend/.cache/
+*.tsbuildinfo
 
 # Environment and secrets
 .env

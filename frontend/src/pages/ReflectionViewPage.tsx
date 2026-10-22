@@ -228,7 +228,7 @@ export const ReflectionViewPage: React.FC = () => {
         </div>
 
         {/* Action Controls & View Toggles */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
           {session.status === 'completed' && (
             <div className="flex rounded-lg bg-paper-200/60 p-1 border border-paper-300 text-xs mr-2">
               <button
@@ -307,12 +307,17 @@ export const ReflectionViewPage: React.FC = () => {
                 Interactive Reflection Map
               </span>
               <span className="text-[11px] text-charcoal-500 hidden sm:inline">
-                Scroll to zoom • Drag to pan • Click hypotheses to inspect or revise
+                Scroll to zoom • Drag to pan • Click any node to inspect details or revise hypotheses
               </span>
             </div>
 
             <ReflectionMap
               state={session.state}
+              onUpdateHypothesis={handleUpdateHypothesis}
+              onSelectOption={(optId) =>
+                setSelectedOptionId(selectedOptionId === optId ? null : optId)
+              }
+              selectedOptionId={selectedOptionId}
               onSelectHypothesis={(hyp) => setSelectedHypothesis(hyp)}
             />
           </div>
