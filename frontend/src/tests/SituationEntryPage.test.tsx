@@ -4,11 +4,16 @@ import { BrowserRouter } from 'react-router-dom';
 import { SituationEntryPage } from '../pages/SituationEntryPage';
 import { apiClient } from '../api/client';
 
-vi.mock('../api/client', () => ({
-  apiClient: {
-    post: vi.fn(),
-  },
-}));
+vi.mock('../api/client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api/client')>();
+  return {
+    ...actual,
+    apiClient: {
+      post: vi.fn(),
+      get: vi.fn(),
+    },
+  };
+});
 
 describe('SituationEntryPage Component', () => {
   it('renders situation entry form with character counters and guidelines', () => {

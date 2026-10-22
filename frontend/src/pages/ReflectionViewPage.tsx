@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { apiClient } from '../api/client';
+import { apiClient, formatApiError } from '../api/client';
 import { ReflectionSession, Hypothesis } from '../types';
 import { ReflectionMap } from '../components/map/ReflectionMap';
 import { HypothesisModal } from '../components/reflection/HypothesisModal';
@@ -16,6 +16,7 @@ import {
   Layers,
   Check,
   FileCheck,
+  X,
 } from 'lucide-react';
 
 export const ReflectionViewPage: React.FC = () => {
@@ -25,6 +26,7 @@ export const ReflectionViewPage: React.FC = () => {
   const [session, setSession] = useState<ReflectionSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Clarification question state
   const [answer, setAnswer] = useState('');
@@ -43,11 +45,24 @@ export const ReflectionViewPage: React.FC = () => {
   const [isCompleting, setIsCompleting] = useState(false);
   const [viewMode, setViewMode] = useState<'map' | 'recap'>('map');
 
+  // Load session whenever ID changes, resetting session state immediately
+  // to avoid flashing stale graphs from previous sessions
   useEffect(() => {
+    let isCancelled = false;
+
+    // Reset local state immediately on ID switch
+    setSession(null);
+    setIsLoading(true);
+    setErrorMessage(null);
+    setActionError(null);
+    setSelectedOptionId(null);
+    setViewMode('map');
+
     const fetchSession = async () => {
       if (!id) return;
       try {
         const res = await apiClient.get<ReflectionSession>(`/reflections/${id}`);
+        if (isCancelled) return;
         setSession(res.data);
         if (res.data.selected_response_id) {
           setSelectedOptionId(res.data.selected_response_id);
@@ -56,18 +71,33 @@ export const ReflectionViewPage: React.FC = () => {
           setViewMode('recap');
         }
       } catch (err: any) {
-        setErrorMessage(
-          err.response?.data?.detail?.message ||
-            err.response?.data?.detail ||
-            'Could not load reflection session.'
-        );
+        if (isCancelled) return;
+        setErrorMessage(formatApiError(err));
       } finally {
-        setIsLoading(false);
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchSession();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [id]);
+
+  // Option reconciliation: clear selectedOptionId if options regenerate without it
+  useEffect(() => {
+    if (selectedOptionId && session?.state?.possible_responses) {
+      const exists = session.state.possible_responses.some(
+        (r) => r.id === selectedOptionId
+      );
+      if (!exists) {
+        setSelectedOptionId(null);
+      }
+    }
+  }, [session, selectedOptionId]);
 
   // Handle Clarification submission (PRD §7 FR-06 & FR-07)
   const handleClarifySubmit = async (e: React.FormEvent) => {
@@ -75,7 +105,7 @@ export const ReflectionViewPage: React.FC = () => {
     if (!id || !answer.trim() || isClarifying) return;
 
     setIsClarifying(true);
-    setErrorMessage(null);
+    setActionError(null);
     setClarifySuccess(false);
 
     try {
@@ -88,10 +118,7 @@ export const ReflectionViewPage: React.FC = () => {
       setClarifySuccess(true);
       setTimeout(() => setClarifySuccess(false), 4000);
     } catch (err: any) {
-      setErrorMessage(
-        err.response?.data?.detail?.message ||
-          'Failed to update reflection with clarification.'
-      );
+      setActionError(formatApiError(err));
     } finally {
       setIsClarifying(false);
     }
@@ -104,6 +131,7 @@ export const ReflectionViewPage: React.FC = () => {
     note?: string
   ) => {
     if (!id) return;
+    setActionError(null);
     try {
       const res = await apiClient.patch<ReflectionSession>(
         `/reflections/${id}/hypotheses/${hypId}`,
@@ -114,10 +142,7 @@ export const ReflectionViewPage: React.FC = () => {
       );
       setSession(res.data);
     } catch (err: any) {
-      alert(
-        err.response?.data?.detail?.message ||
-          'Failed to update hypothesis status.'
-      );
+      setActionError(formatApiError(err));
     }
   };
 
@@ -125,6 +150,7 @@ export const ReflectionViewPage: React.FC = () => {
   const handleSave = async () => {
     if (!id || isSaving) return;
     setIsSaving(true);
+    setActionError(null);
     try {
       const res = await apiClient.post<ReflectionSession>(`/reflections/${id}/save`, {
         title: session?.title || session?.state.encounter.description.slice(0, 80),
@@ -133,7 +159,7 @@ export const ReflectionViewPage: React.FC = () => {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err: any) {
-      alert('Failed to save reflection session.');
+      setActionError(formatApiError(err));
     } finally {
       setIsSaving(false);
     }
@@ -143,6 +169,7 @@ export const ReflectionViewPage: React.FC = () => {
   const handleComplete = async () => {
     if (!id || isCompleting) return;
     setIsCompleting(true);
+    setActionError(null);
     try {
       const res = await apiClient.post<ReflectionSession>(
         `/reflections/${id}/complete`,
@@ -153,7 +180,7 @@ export const ReflectionViewPage: React.FC = () => {
       setSession(res.data);
       setViewMode('recap');
     } catch (err: any) {
-      alert('Failed to complete reflection.');
+      setActionError(formatApiError(err));
     } finally {
       setIsCompleting(false);
     }
@@ -297,6 +324,27 @@ export const ReflectionViewPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Dismissible In-App Action Error Banner */}
+      {actionError && (
+        <div
+          role="alert"
+          className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center justify-between gap-3 shadow-xs print:hidden animate-fade-in"
+        >
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            <span>{actionError}</span>
+          </div>
+          <button
+            onClick={() => setActionError(null)}
+            className="p-1 rounded-md text-red-600 hover:text-red-900 hover:bg-red-100 transition-colors"
+            title="Dismiss error"
+            aria-label="Dismiss error"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Render View Mode: Recap or Map */}
       {viewMode === 'recap' ? (

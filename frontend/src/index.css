@@ -39,15 +39,15 @@
   box-shadow: 0 6px 16px -4px rgba(26, 29, 31, 0.08), 0 2px 6px -1px rgba(26, 29, 31, 0.04);
 }
 
-/* Print Stylesheet (Task 4) */
+/* Print Stylesheet (Task 4 & Prompt 7) */
 @media print {
-  header, footer, nav, button, .print\\:hidden {
+  header, footer, nav, button, .print\:hidden, [class*="print:hidden"] {
     display: none !important;
   }
 
   body {
     background: #FFFFFF !important;
-    color: #000000 !important;
+    color: #111827 !important;
     font-size: 11pt;
   }
 
@@ -55,6 +55,8 @@
     border: 1px solid #D0D0D0 !important;
     box-shadow: none !important;
     break-inside: avoid;
+    word-break: break-word;
+    overflow-wrap: break-word;
   }
 
   .bg-paper-grid {

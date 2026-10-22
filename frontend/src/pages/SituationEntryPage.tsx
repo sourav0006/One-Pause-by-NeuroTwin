@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiClient } from '../api/client';
+import { apiClient, formatApiError } from '../api/client';
 import { ReflectionSession } from '../types';
 import { BrainToMapTransition } from '../components/common/BrainToMapTransition';
 import { ArrowLeft, Sparkles, Send, Info, AlertCircle } from 'lucide-react';
@@ -32,16 +32,7 @@ export const SituationEntryPage: React.FC = () => {
       // Smooth transition to reflection map
       navigate(`/reflections/${res.data.id}`);
     } catch (err: any) {
-      const detail = err.response?.data?.detail;
-      if (typeof detail === 'object' && detail?.message) {
-        setErrorMessage(detail.message);
-      } else if (typeof detail === 'string') {
-        setErrorMessage(detail);
-      } else {
-        setErrorMessage(
-          'Failed to analyze reflection. Please check AI provider configuration or network connection.'
-        );
-      }
+      setErrorMessage(formatApiError(err));
     } finally {
       setIsLoading(false);
     }
