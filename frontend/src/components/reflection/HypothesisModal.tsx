@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Hypothesis } from '../../types';
 import { Sparkles, Check, X, Edit3, AlertCircle } from 'lucide-react';
 
@@ -22,6 +22,16 @@ export const HypothesisModal: React.FC<HypothesisModalProps> = ({
   const [correctionNote, setCorrectionNote] = useState(hypothesis.user_note || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCorrectionInput, setShowCorrectionInput] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const handleStatusChange = async (
     status: 'active' | 'corrected' | 'dismissed',

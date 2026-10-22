@@ -13,7 +13,7 @@ import { StructuredReflectionState, Hypothesis } from '../../types';
 import { nodeTypes } from './CustomNodes';
 import { computeReflectionLayout } from './layoutUtils';
 import { NodeInspector, SelectedNodeInfo, ConnectedNodeInfo } from './NodeInspector';
-import { Layers, ChevronDown, ChevronUp } from 'lucide-react';
+import { Layers, ChevronDown, ChevronUp, Maximize2 } from 'lucide-react';
 
 interface ReflectionMapProps {
   state: StructuredReflectionState;
@@ -68,6 +68,28 @@ const ReflectionMapInner: React.FC<ReflectionMapProps> = ({
     },
     [onSelectHypothesis]
   );
+
+  // Handle ESC key to dismiss selected node inspector
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isTyping =
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable ||
+          (typeof target.closest === 'function' &&
+            Boolean(target.closest('input, textarea, select, [contenteditable="true"]'))));
+      if (isTyping) return;
+
+      if (e.key === 'Escape' && selectedNode) {
+        setSelectedNode(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedNode]);
 
   // Compute deterministic layout
   const { nodes, edges } = useMemo(() => {
@@ -223,6 +245,20 @@ const ReflectionMapInner: React.FC<ReflectionMapProps> = ({
               </div>
             )}
           </div>
+        </div>
+
+        {/* Presenter Quick Fit Controls Overlay */}
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => reactFlow.fitView({ padding: 0.15, duration: prefersReducedMotion ? 0 : 400 })}
+            className="px-2.5 py-1.5 rounded-xl bg-white/95 backdrop-blur-xs border border-paper-300 shadow-xs text-[11px] font-medium text-charcoal-700 hover:text-charcoal-900 hover:bg-paper-50 transition-colors flex items-center gap-1.5"
+            title="Reset view to fit all reflection nodes"
+            aria-label="Fit map to view"
+          >
+            <Maximize2 className="w-3.5 h-3.5 text-sage-700" />
+            <span className="hidden sm:inline">Fit Map</span>
+          </button>
         </div>
 
         {/* Floating helper hint */}

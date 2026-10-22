@@ -50,4 +50,20 @@ describe('HypothesisModal', () => {
     expect(onUpdate).toHaveBeenCalledWith('hypothesis_1', 'dismissed', undefined);
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('closes modal when Escape key is pressed', () => {
+    const onClose = vi.fn();
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <HypothesisModal
+        hypothesis={mockHypothesis}
+        onClose={onClose}
+        onUpdate={onUpdate}
+      />
+    );
+
+    fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

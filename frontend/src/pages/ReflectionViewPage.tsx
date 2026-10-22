@@ -87,6 +87,43 @@ export const ReflectionViewPage: React.FC = () => {
     };
   }, [id]);
 
+  // Safe presenter keyboard navigation (Prompt 8 §3)
+  // Only non-destructive, and strictly disabled while typing in forms/inputs
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isTyping =
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable ||
+          (typeof target.closest === 'function' &&
+            Boolean(target.closest('input, textarea, select, [contenteditable="true"]'))));
+
+      // Never fire shortcuts while typing in inputs or forms
+      if (isTyping) {
+        return;
+      }
+
+      // Escape dismisses non-destructive error overlays
+      if (e.key === 'Escape') {
+        if (actionError) {
+          setActionError(null);
+        }
+      }
+
+      // Safe, non-destructive shortcut to return to dashboard: Alt + D
+      if (e.altKey && (e.key === 'd' || e.key === 'D')) {
+        e.preventDefault();
+        navigate('/dashboard');
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [actionError, navigate]);
+
   // Option reconciliation: clear selectedOptionId if options regenerate without it
   useEffect(() => {
     if (selectedOptionId && session?.state?.possible_responses) {
@@ -227,9 +264,14 @@ export const ReflectionViewPage: React.FC = () => {
           <button
             onClick={() => navigate('/dashboard')}
             className="inline-flex items-center gap-1.5 text-xs text-charcoal-500 hover:text-charcoal-800 transition-colors mb-1"
+            title="Return to Dashboard (Alt+D)"
+            aria-label="Return to Dashboard"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            Dashboard
+            <span>Dashboard</span>
+            <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] font-mono text-charcoal-400 bg-paper-100 border border-paper-200 rounded">
+              Alt+D
+            </kbd>
           </button>
           <h2 className="font-serif text-2xl font-medium text-charcoal-900">
             {session.title || 'Reflection Map'}

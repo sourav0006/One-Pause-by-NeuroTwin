@@ -5,8 +5,11 @@ import { ReflectionSession } from '../types';
 import { BrainToMapTransition } from '../components/common/BrainToMapTransition';
 import { ArrowLeft, Sparkles, Send, Info, AlertCircle } from 'lucide-react';
 
-const EXAMPLE_SITUATION =
-  "My manager has given me another task, but I'm already overloaded. I want to say yes because I don't want to disappoint him.";
+const DEMO_SITUATION =
+  "My manager asked me to take on an urgent project with an immediate deadline, but my schedule is already committed to quarterly team deliverables. I want to say yes to maintain rapport, but I am worried about compromising delivery quality.";
+
+const DEMO_CONTEXT =
+  "Maintaining a reputation for reliable delivery without burnout is important to me.";
 
 export const SituationEntryPage: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +18,12 @@ export const SituationEntryPage: React.FC = () => {
   const [showOptionalContext, setShowOptionalContext] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleLoadDemoScenario = () => {
+    setSituation(DEMO_SITUATION);
+    setOptionalContext(DEMO_CONTEXT);
+    setShowOptionalContext(true);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,11 +95,12 @@ export const SituationEntryPage: React.FC = () => {
               </label>
               <button
                 type="button"
-                onClick={() => setSituation(EXAMPLE_SITUATION)}
+                onClick={handleLoadDemoScenario}
                 className="text-[11px] text-sage-700 hover:text-sage-900 flex items-center gap-1 underline underline-offset-2"
+                title="Fill realistic workplace workload scenario for live demonstration"
               >
                 <Sparkles className="w-3 h-3" />
-                Fill PRD Example Prompt
+                Fill Demo Scenario: Workload & Priorities
               </button>
             </div>
             <textarea

@@ -151,4 +151,21 @@ describe('ReflectionMap Component', () => {
     fireEvent.click(screen.getByLabelText('Close details inspector'));
     expect(screen.queryByLabelText('Node Details Inspector')).not.toBeInTheDocument();
   });
+
+  it('renders Fit Map presenter button and closes inspector with Escape key', () => {
+    render(<ReflectionMap state={mockState} />);
+
+    // Fit Map button exists
+    const fitMapBtn = screen.getByRole('button', { name: /Fit map to view/i });
+    expect(fitMapBtn).toBeInTheDocument();
+    fireEvent.click(fitMapBtn);
+
+    // Open inspector by clicking a node
+    fireEvent.click(screen.getByText('Protect health and deliver quality work'));
+    expect(screen.getByLabelText('Node Details Inspector')).toBeInTheDocument();
+
+    // Press Escape key
+    fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
+    expect(screen.queryByLabelText('Node Details Inspector')).not.toBeInTheDocument();
+  });
 });

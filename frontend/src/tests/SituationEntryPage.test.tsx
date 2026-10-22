@@ -63,4 +63,21 @@ describe('SituationEntryPage Component', () => {
       ).toBeInTheDocument();
     });
   });
+
+  it('populates realistic workplace scenario and optional context when Fill Demo Scenario clicked', () => {
+    render(
+      <BrowserRouter>
+        <SituationEntryPage />
+      </BrowserRouter>
+    );
+
+    const demoBtn = screen.getByRole('button', { name: /Fill Demo Scenario: Workload & Priorities/i });
+    fireEvent.click(demoBtn);
+
+    const textarea = screen.getByDisplayValue(/My manager asked me to take on an urgent project/i);
+    expect(textarea).toBeInTheDocument();
+
+    const contextArea = screen.getByDisplayValue(/Maintaining a reputation for reliable delivery without burnout/i);
+    expect(contextArea).toBeInTheDocument();
+  });
 });
