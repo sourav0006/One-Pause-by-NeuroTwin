@@ -104,7 +104,7 @@ Verify: Open [http://localhost:5173](http://localhost:5173).
 
 ### Step 1: Log In (Dashboard)
 1. Navigate to `http://localhost:5173`.
-2. If already logged in, you will land on `/dashboard`. If not, register or log in with credentials (e.g., `presenter@onepause.local` / `PresenterPass123!`).
+2. If already logged in, you will land on `/dashboard`. If not, register or log in with credentials (e.g., `presenter@example.com` / `PresenterPass123!`).
 3. **What to say**:
    > *"ONE PAUSE is not an automated chatbot that drafts emails or tells you what to say. It is a reflective cognitive tool designed around a single principle: Before you respond, see."*
 4. Click **"Begin New Reflection"** (`+`).
@@ -245,7 +245,7 @@ If the venue Wi-Fi fails or Gemini API keys cannot be used:
 | **PostgreSQL Connection Error** | PostgreSQL service stopped or database `one_pause` does not exist. | Run `brew services start postgresql@16` (or `pg_ctl start`) and `psql -c "CREATE DATABASE one_pause;"` |
 | **HTTP 503 "AI Provider Not Configured"** | `GEMINI_API_KEY` is missing while `ENABLE_DEV_DEMO_AI=false`. | Switch `ENABLE_DEV_DEMO_AI=true` in `backend/.env` for presentation demo mode, or add a valid key. |
 | **HTTP 429 "AI service rate limit"** | Gemini API free quota exceeded. | Switch `ENABLE_DEV_DEMO_AI=true` in `backend/.env` immediately to fall back to local demo fixtures. |
-| **HTTP 401 "Could not validate credentials"** | Token expired (tokens expire in 60 minutes). | Log out and log back in, or register a new test user (`presenter2@onepause.local`). |
+| **HTTP 401 "Could not validate credentials"** | Token expired (tokens expire in 60 minutes). | Log out and log back in, or register a new test user (`presenter2@example.com`). |
 | **Inspector modal won't close** | Focus stuck inside input. | Press `Escape` or click outside the modal overlay. |
 | **Navigation hotkey not working** | Focus is currently inside an `<input>` or `<textarea>`. | `Alt + D` is intentionally disabled during text editing to prevent accidental navigation while typing. Click outside the input and press `Alt + D`. |
 

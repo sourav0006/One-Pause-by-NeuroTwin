@@ -158,7 +158,7 @@ npm run dev
 ## Registration, Login & Presentation Demo Workflow
 
 1. Open [http://localhost:5173](http://localhost:5173) in your browser.
-2. Click **"Get Started"** or **"Sign In"** to register or log in (e.g. `presenter@onepause.local` / `PresenterPass123!`).
+2. Click **"Get Started"** or **"Sign In"** to register or log in (e.g. `presenter@example.com` / `PresenterPass123!`).
 3. On the Dashboard, click **"Begin New Reflection"** (`+`).
 4. On the Situation Entry page, click the quick-fill button: **"Fill Demo Scenario: Workload & Priorities"** to populate a realistic workplace dilemma.
 5. Click **"Pause & Reflect"** to transition to the interactive map.
