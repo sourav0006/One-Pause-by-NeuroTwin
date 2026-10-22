@@ -106,3 +106,12 @@ GEMINI_API_KEY="your-gemini-api-key"
 GEMINI_MODEL="gemini-2.5-flash"
 ```
 When `GEMINI_API_KEY` is provided, the reflection engine performs live structured analysis according to PRD prompts. Unit tests mock the AI provider so valid credentials are not required to run standard test suites.
+
+### Offline Presentation Demo Mode
+
+If running offline or without an active Gemini API key during local development:
+```env
+ENABLE_DEV_DEMO_AI=true
+```
+This enables deterministic fixture responses clearly labeled with `[DEV FIXTURE]` and `DEV DEMO FIXTURES (Offline)`. This mode is strictly prohibited and deactivated in production environments.
+
