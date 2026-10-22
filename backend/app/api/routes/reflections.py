@@ -25,6 +25,7 @@ from app.schemas.reflection import (
     CompleteRequest,
     HypothesisUpdateRequest,
     ReflectionResponse,
+    ReportedFact,
     SaveSessionRequest,
     SessionSummaryResponse,
     StructuredReflectionState,
@@ -139,6 +140,47 @@ async def clarify_reflection(
         )
     except AIProviderException as e:
         _handle_ai_exception(e)
+
+    # Invariant: Never discard user's previous hypothesis corrections, notes, or dismissals
+    prev_hypotheses = {h.id: h for h in current_state.hypotheses}
+    merged_hypotheses = []
+    seen_ids = set()
+
+    for h in updated_state.hypotheses:
+        prev = prev_hypotheses.get(h.id)
+        if prev:
+            # Enforce retention of user manual status & notes
+            if prev.status in ("dismissed", "corrected"):
+                h.status = prev.status
+            if prev.user_note:
+                h.user_note = prev.user_note
+        merged_hypotheses.append(h)
+        seen_ids.add(h.id)
+
+    # Re-attach any previous hypothesis that had a user note or dismissed status if AI omitted it
+    for prev_id, prev_h in prev_hypotheses.items():
+        if prev_id not in seen_ids and (prev_h.status in ("dismissed", "corrected") or prev_h.user_note):
+            merged_hypotheses.append(prev_h)
+
+    updated_state.hypotheses = merged_hypotheses
+
+    # Invariant: Preserve all previous reported facts and record user's clarification answer
+    existing_fact_texts = {f.text.strip().lower() for f in updated_state.reported_facts}
+    for old_fact in current_state.reported_facts:
+        if old_fact.text.strip().lower() not in existing_fact_texts:
+            updated_state.reported_facts.insert(0, old_fact)
+            existing_fact_texts.add(old_fact.text.strip().lower())
+
+    clarify_lower = req.answer.strip().lower()
+    if not any(clarify_lower in f.text.lower() for f in updated_state.reported_facts):
+        new_fid = f"fact_{len(updated_state.reported_facts) + 1}"
+        updated_state.reported_facts.append(
+            ReportedFact(
+                id=new_fid,
+                text=f"Clarification: {req.answer.strip()}",
+                source="user",
+            )
+        )
 
     session.current_state = updated_state.model_dump()
     flag_modified(session, "current_state")

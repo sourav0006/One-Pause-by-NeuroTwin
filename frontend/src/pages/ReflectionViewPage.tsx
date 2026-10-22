@@ -224,6 +224,15 @@ export const ReflectionViewPage: React.FC = () => {
                 </span>
               </>
             )}
+            {(session.state.encounter.description.includes('[DEV FIXTURE]') ||
+              session.state.reported_facts.some((f) => f.text.includes('[DEV FIXTURE]'))) && (
+              <>
+                <span>•</span>
+                <span className="text-[10px] text-amber-900 bg-amber-100/90 border border-amber-300 px-2 py-0.5 rounded font-mono font-semibold tracking-tight">
+                  DEV DEMO FIXTURES (Offline)
+                </span>
+              </>
+            )}
           </div>
         </div>
 
