@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, User as UserIcon, Compass } from 'lucide-react';
+import { LogOut, User as UserIcon } from 'lucide-react';
+import { Logo } from '../common/Logo';
 
 export const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -17,9 +18,7 @@ export const Navbar: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Brand */}
         <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-8 h-8 rounded-full bg-sage-100 border border-sage-300 flex items-center justify-center text-sage-900 group-hover:bg-sage-200 transition-colors">
-            <Compass className="w-4 h-4 text-sage-700" />
-          </div>
+          <Logo size={36} variant="badge" className="group-hover:scale-105 transition-transform" />
           <div>
             <span className="font-serif text-xl font-medium tracking-tight text-charcoal-900">
               ONE PAUSE

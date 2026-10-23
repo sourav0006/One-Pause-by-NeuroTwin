@@ -36,8 +36,8 @@ class Settings(BaseSettings):
     # AI Configuration (Gemini)
     AI_PROVIDER: str = "gemini"
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-2.5-flash"
-    ENABLE_DEV_DEMO_AI: bool = False
+    GEMINI_MODEL: str = "gemini-flash-latest"
+    ENABLE_DEV_DEMO_AI: bool = True
 
     @model_validator(mode="after")
     def validate_production_secrets(self) -> "Settings":

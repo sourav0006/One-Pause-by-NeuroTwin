@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../api/client';
 import { AuthResponse } from '../types';
+import { Logo } from '../components/common/Logo';
 import { Eye, EyeOff, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
 
 export const AuthPage: React.FC = () => {
@@ -64,7 +65,10 @@ export const AuthPage: React.FC = () => {
   return (
     <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6">
       <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-3">
+          <div className="flex justify-center">
+            <Logo size={48} variant="badge" className="shadow-xs hover:scale-105 transition-transform" />
+          </div>
           <h2 className="font-serif text-3xl font-medium text-charcoal-900">
             {mode === 'register' ? 'Create an Account' : 'Welcome Back'}
           </h2>

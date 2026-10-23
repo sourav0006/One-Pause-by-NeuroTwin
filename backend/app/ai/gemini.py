@@ -31,7 +31,7 @@ class GeminiProvider(BaseAIProvider):
 
     def __init__(self, api_key: str | None = None, model: str | None = None):
         self.api_key = api_key or settings.GEMINI_API_KEY
-        self.model_name = model or settings.GEMINI_MODEL or "gemini-2.5-flash"
+        self.model_name = model or settings.GEMINI_MODEL or "gemini-flash-latest"
         self._client = None
 
     def _get_client(self):

@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiClient, formatApiError } from '../api/client';
 import { SessionSummary } from '../types';
+import { Logo } from '../components/common/Logo';
 import {
   PlusCircle,
   Clock,
   BookOpen,
-  Sparkles,
   CheckCircle2,
   ArrowRight,
   Trash2,
@@ -255,8 +255,8 @@ export const DashboardPage: React.FC = () => {
         ) : sessions.length === 0 ? (
           /* Empty State (PRD §8.1) */
           <div className="paper-card p-10 text-center space-y-4 border-dashed border-paper-300">
-            <div className="w-12 h-12 rounded-full bg-paper-100 border border-paper-200 text-charcoal-400 flex items-center justify-center mx-auto">
-              <Sparkles className="w-5 h-5 text-sage-700" />
+            <div className="flex justify-center mx-auto">
+              <Logo size={48} variant="badge" className="shadow-xs" />
             </div>
             <div className="space-y-1">
               <h4 className="font-serif text-base font-medium text-charcoal-800">
