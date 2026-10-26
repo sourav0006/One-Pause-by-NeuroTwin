@@ -13,6 +13,8 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:3000",
+        "https://localhost",
+        "capacitor://localhost",
     ]
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
@@ -22,11 +24,34 @@ class Settings(BaseSettings):
             return [i.strip() for i in v.split(",") if i.strip()]
         elif isinstance(v, (list, str)):
             return v  # type: ignore
-        return ["http://localhost:5173"]
+        return [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:3000",
+            "https://localhost",
+            "capacitor://localhost",
+        ]
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://souravmahato@localhost:5432/one_pause"
     DATABASE_URL_SYNC: str = "postgresql://souravmahato@localhost:5432/one_pause"
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def assemble_database_url(cls, v: str) -> str:
+        if isinstance(v, str):
+            if v.startswith("postgres://"):
+                return v.replace("postgres://", "postgresql+asyncpg://", 1)
+            elif v.startswith("postgresql://") and not v.startswith("postgresql+asyncpg://"):
+                return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
+
+    @field_validator("DATABASE_URL_SYNC", mode="before")
+    @classmethod
+    def assemble_database_url_sync(cls, v: str) -> str:
+        if isinstance(v, str) and v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql://", 1)
+        return v
 
     # Security & JWT
     JWT_SECRET_KEY: str = "one-pause-local-mvp-secret-key-change-in-production-only"
@@ -36,11 +61,14 @@ class Settings(BaseSettings):
     # AI Configuration (Gemini)
     AI_PROVIDER: str = "gemini"
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-flash-latest"
+    GEMINI_MODEL: str = "gemini-3.1-flash-lite"
     ENABLE_DEV_DEMO_AI: bool = True
 
     @model_validator(mode="after")
-    def validate_production_secrets(self) -> "Settings":
+    def validate_production_settings(self) -> "Settings":
+        if self.FRONTEND_ORIGIN and self.FRONTEND_ORIGIN not in self.BACKEND_CORS_ORIGINS:
+            self.BACKEND_CORS_ORIGINS.append(self.FRONTEND_ORIGIN)
+
         if self.ENVIRONMENT == "production" and (
             not self.JWT_SECRET_KEY
             or self.JWT_SECRET_KEY == "one-pause-local-mvp-secret-key-change-in-production-only"

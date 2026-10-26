@@ -17,6 +17,9 @@ import {
   Check,
   FileCheck,
   X,
+  MessageSquare,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 export const ReflectionViewPage: React.FC = () => {
@@ -44,6 +47,7 @@ export const ReflectionViewPage: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [viewMode, setViewMode] = useState<'map' | 'recap'>('map');
+  const [showBehaviouralContext, setShowBehaviouralContext] = useState(false);
 
   // Load session whenever ID changes, resetting session state immediately
   // to avoid flashing stale graphs from previous sessions
@@ -398,6 +402,52 @@ export const ReflectionViewPage: React.FC = () => {
         />
       ) : (
         <>
+          {/* User-Reported Behavioural Context Accordion (Phase 2) */}
+          {session.state.behavioural_answers && session.state.behavioural_answers.length > 0 && (
+            <div className="paper-card p-4 bg-white border border-paper-200 space-y-3">
+              <button
+                type="button"
+                onClick={() => setShowBehaviouralContext(!showBehaviouralContext)}
+                className="w-full flex items-center justify-between text-left text-xs font-medium text-charcoal-800 hover:text-charcoal-900"
+              >
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-sage-700" />
+                  <span className="font-semibold">User-Reported Behavioural Context</span>
+                  <span className="text-[10px] text-sage-800 bg-sage-50 border border-sage-200 px-2 py-0.5 rounded font-normal">
+                    3 questions answered
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 text-[11px] text-charcoal-500">
+                  <span>{showBehaviouralContext ? 'Hide answers' : 'View answers'}</span>
+                  {showBehaviouralContext ? (
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  )}
+                </div>
+              </button>
+
+              {showBehaviouralContext && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-paper-100">
+                  {session.state.behavioural_answers.map((ans, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-lg bg-paper-50/70 border border-paper-200 text-xs space-y-1.5"
+                    >
+                      <span className="text-[10px] font-bold text-sage-800 uppercase tracking-wider block">
+                        {ans.theme}
+                      </span>
+                      <p className="text-[11px] text-charcoal-600 leading-snug">{ans.question}</p>
+                      <p className="text-xs text-charcoal-900 bg-white p-2 rounded border border-paper-200 italic">
+                        "{ans.answer}"
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Main Interactive Map Section */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs text-charcoal-600">

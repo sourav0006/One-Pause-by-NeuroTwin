@@ -1,6 +1,11 @@
 from abc import ABC, abstractmethod
 
-from app.schemas.reflection import PossibleResponse, StructuredReflectionState
+from app.schemas.reflection import (
+    BehaviouralAnswer,
+    BehaviouralQuestion,
+    PossibleResponse,
+    StructuredReflectionState,
+)
 
 
 class AIProviderException(Exception):
@@ -46,8 +51,17 @@ class BaseAIProvider(ABC):
     """Abstract base class for provider-independent AI reflection operations."""
 
     @abstractmethod
-    async def analyze_situation(
+    async def generate_behavioural_questions(
         self, situation: str, context: str | None = None
+    ) -> list[BehaviouralQuestion]:
+        """Generate three neutral, concise behavioural questions tailored to the situation."""
+
+    @abstractmethod
+    async def analyze_situation(
+        self,
+        situation: str,
+        context: str | None = None,
+        behavioural_answers: list[BehaviouralAnswer] | None = None,
     ) -> StructuredReflectionState:
         """Analyze a new situation and produce initial structured reflection data."""
 

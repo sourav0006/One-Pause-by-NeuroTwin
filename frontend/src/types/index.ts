@@ -57,6 +57,25 @@ export interface StateConnection {
   label?: string;
 }
 
+export interface BehaviouralAnswer {
+  question_id: string;
+  theme: string;
+  question: string;
+  answer: string;
+}
+
+export interface BehaviouralQuestion {
+  id: string;
+  theme: string;
+  question: string;
+  options: string[];
+  placeholder?: string;
+}
+
+export interface QuestionsResponse {
+  questions: BehaviouralQuestion[];
+}
+
 export interface StructuredReflectionState {
   encounter: {
     description: string;
@@ -68,6 +87,7 @@ export interface StructuredReflectionState {
   follow_up_question?: FollowUpQuestion;
   possible_responses: PossibleResponse[];
   connections: StateConnection[];
+  behavioural_answers?: BehaviouralAnswer[];
 }
 
 export interface ReflectionSession {

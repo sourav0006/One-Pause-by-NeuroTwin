@@ -12,6 +12,8 @@ from app.ai.base import (
 from app.ai.deps import get_ai_provider
 from app.main import app
 from app.schemas.reflection import (
+    BehaviouralAnswer,
+    BehaviouralQuestion,
     Connection,
     Encounter,
     FollowUpQuestion,
@@ -34,8 +36,44 @@ class MockAIProvider(BaseAIProvider):
         self.should_fail_unavailable = should_fail_unavailable
         self.should_fail_validation = should_fail_validation
 
-    async def analyze_situation(
+    async def generate_behavioural_questions(
         self, situation: str, context: str | None = None
+    ) -> list[BehaviouralQuestion]:
+        if self.should_fail_config:
+            raise AIProviderConfigError()
+        if self.should_fail_unavailable:
+            raise AIProviderUnavailableError()
+        if self.should_fail_validation:
+            raise AIProviderValidationError()
+        return [
+            BehaviouralQuestion(
+                id="q1",
+                theme="Immediate Focus",
+                question="What felt most prominent in shaping your immediate reaction?",
+                options=["The deadline", "The tone", "None of these"],
+                placeholder="Details...",
+            ),
+            BehaviouralQuestion(
+                id="q2",
+                theme="Influencing Factors",
+                question="Might any personal or situational factors have influenced your capacity?",
+                options=["Heavy workload", "Fatigue", "None of these"],
+                placeholder="Details...",
+            ),
+            BehaviouralQuestion(
+                id="q3",
+                theme="Prior Habits",
+                question="How have you typically tended to respond in similar moments?",
+                options=["Saying yes quickly", "Delaying", "None of these"],
+                placeholder="Details...",
+            ),
+        ]
+
+    async def analyze_situation(
+        self,
+        situation: str,
+        context: str | None = None,
+        behavioural_answers: list[BehaviouralAnswer] | None = None,
     ) -> StructuredReflectionState:
         if self.should_fail_config:
             raise AIProviderConfigError()
@@ -112,6 +150,7 @@ class MockAIProvider(BaseAIProvider):
                 Connection(source="hypothesis_1", target="unknown_1", label="hinges on"),
                 Connection(source="unknown_1", target="option_1", label="informs"),
             ],
+            behavioural_answers=behavioural_answers or [],
         )
 
     async def clarify_reflection(
@@ -421,3 +460,98 @@ async def test_completion_with_and_without_selected_response(
     assert comp_with_opt.json()["selected_response_id"] == "option_1"
 
     app.dependency_overrides.pop(get_ai_provider, None)
+
+
+@pytest.mark.asyncio
+async def test_behavioural_questions_workflow_and_persistence(
+    client: AsyncClient, auth_headers: dict
+):
+    mock_provider = MockAIProvider()
+    app.dependency_overrides[get_ai_provider] = lambda: mock_provider
+
+    # 1. Test POST /questions returns exactly 3 questions
+    q_res = await client.post(
+        "/api/v1/reflections/questions",
+        json={"situation": "Director demanded an emergency deliverable over the weekend without warning."},
+        headers=auth_headers,
+    )
+    assert q_res.status_code == 200
+    questions_data = q_res.json()["questions"]
+    assert len(questions_data) == 3
+    assert [q["id"] for q in questions_data] == ["q1", "q2", "q3"]
+    assert all("question" in q and "theme" in q and "options" in q for q in questions_data)
+
+    # 2. Test POST /analyze with behavioural answers
+    answers = [
+        {
+            "question_id": "q1",
+            "theme": "Immediate Focus",
+            "question": questions_data[0]["question"],
+            "answer": "The sudden expectation and lack of respect for personal time.",
+        },
+        {
+            "question_id": "q2",
+            "theme": "Influencing Factors",
+            "question": questions_data[1]["question"],
+            "answer": "Severe sleep debt and back-to-back delivery deadlines.",
+        },
+        {
+            "question_id": "q3",
+            "theme": "Prior Habits",
+            "question": questions_data[2]["question"],
+            "answer": "Historically I say yes to avoid confrontation, then resent it later.",
+        },
+    ]
+
+    analyze_res = await client.post(
+        "/api/v1/reflections/analyze",
+        json={
+            "situation": "Director demanded an emergency deliverable over the weekend without warning.",
+            "behavioural_answers": answers,
+        },
+        headers=auth_headers,
+    )
+    assert analyze_res.status_code == 201
+    res_data = analyze_res.json()
+    session_id = res_data["id"]
+    state = res_data["state"]
+
+    assert len(state["behavioural_answers"]) == 3
+    assert state["behavioural_answers"][0]["question_id"] == "q1"
+    assert state["behavioural_answers"][1]["answer"] == "Severe sleep debt and back-to-back delivery deadlines."
+
+    # 3. Test clarify preserves behavioural answers
+    clarify_res = await client.post(
+        f"/api/v1/reflections/{session_id}/clarify",
+        json={"answer": "My primary goal is to protect my weekend while proposing a Monday morning delivery."},
+        headers=auth_headers,
+    )
+    assert clarify_res.status_code == 200
+    clarified_state = clarify_res.json()["state"]
+    assert len(clarified_state["behavioural_answers"]) == 3
+    assert clarified_state["behavioural_answers"][0]["theme"] == "Immediate Focus"
+
+    # 4. Save the session
+    save_res = await client.post(
+        f"/api/v1/reflections/{session_id}/save",
+        json={},
+        headers=auth_headers,
+    )
+    assert save_res.status_code == 200
+    assert save_res.json()["is_saved"] is True
+
+    # 5. Fetch session directly (reopen) and verify behavioural answers are intact
+    fetch_res = await client.get(
+        f"/api/v1/reflections/{session_id}",
+        headers=auth_headers,
+    )
+    assert fetch_res.status_code == 200
+    reopened = fetch_res.json()
+    assert reopened["is_saved"] is True
+    assert len(reopened["state"]["behavioural_answers"]) == 3
+    assert reopened["state"]["behavioural_answers"][2]["answer"] == (
+        "Historically I say yes to avoid confrontation, then resent it later."
+    )
+
+    app.dependency_overrides.pop(get_ai_provider, None)
+

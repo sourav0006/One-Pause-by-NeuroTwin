@@ -72,7 +72,7 @@ async def test_complete_12_step_user_journey(client: AsyncClient, monkeypatch):
     assert len(state["unknowns"]) >= 2
     assert len(state["goals"]) >= 1
     assert state["follow_up_question"] is not None
-    assert len(state["possible_responses"]) >= 2
+    assert len(state["possible_responses"]) == 3, f"Expected exactly 3 response options, got {len(state['possible_responses'])}"
     # Verify [DEV FIXTURE] tag is present on fixtures in dev demo mode
     assert "[DEV FIXTURE]" in state["encounter"]["description"]
 
@@ -106,7 +106,7 @@ async def test_complete_12_step_user_journey(client: AsyncClient, monkeypatch):
     )
     assert options_resp.status_code == 200, options_resp.text
     options = options_resp.json()["state"]["possible_responses"]
-    assert len(options) >= 2
+    assert len(options) == 3, f"Expected exactly 3 regenerated options, got {len(options)}"
     for opt in options:
         assert len(opt["benefits"]) >= 1
         assert len(opt["risks"]) >= 1

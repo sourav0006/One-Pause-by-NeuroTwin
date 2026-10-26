@@ -52,14 +52,42 @@ class PossibleResponse(BaseModel):
 
 class OptionsResponse(BaseModel):
     possible_responses: list[PossibleResponse] = Field(
-        default_factory=list, description="List of generated possible next responses"
+        ..., min_length=3, max_length=3, description="List of exactly 3 generated possible next responses"
     )
+
+    model_config = ConfigDict(validate_assignment=True)
 
 
 class Connection(BaseModel):
     source: str = Field(..., description="Source node id")
     target: str = Field(..., description="Target node id")
     label: str | None = Field(None, description="Relationship description")
+
+
+class BehaviouralAnswer(BaseModel):
+    question_id: str = Field(..., description="Stable question identifier, e.g. q1")
+    theme: str = Field(..., description="Theme, e.g. Immediate Focus, Influencing Factors, Prior Habits")
+    question: str = Field(..., description="The neutral question asked")
+    answer: str = Field(..., min_length=1, max_length=2000, description="User's response")
+
+
+class BehaviouralQuestion(BaseModel):
+    id: str = Field(..., description="Stable question identifier, e.g. q1")
+    theme: str = Field(..., description="Short thematic category, e.g. Immediate Focus, Influencing Factors, Prior Habits")
+    question: str = Field(..., description="Neutral, concise, non-leading question")
+    options: list[str] = Field(default_factory=list, description="Neutral quick-select options")
+    placeholder: str = Field(default="Your reflection...", description="Placeholder text")
+
+
+class QuestionsRequest(BaseModel):
+    situation: str = Field(..., min_length=10, max_length=4000)
+    context: str | None = Field(None, max_length=1000)
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class QuestionsResponse(BaseModel):
+    questions: list[BehaviouralQuestion] = Field(..., min_length=3, max_length=3)
 
 
 class StructuredReflectionState(BaseModel):
@@ -69,8 +97,13 @@ class StructuredReflectionState(BaseModel):
     unknowns: list[Unknown] = Field(default_factory=list)
     goals: list[Goal] = Field(default_factory=list)
     follow_up_question: FollowUpQuestion | None = None
-    possible_responses: list[PossibleResponse] = Field(default_factory=list)
+    possible_responses: list[PossibleResponse] = Field(
+        ..., min_length=3, max_length=3, description="Exactly 3 balanced response options"
+    )
     connections: list[Connection] = Field(default_factory=list)
+    behavioural_answers: list[BehaviouralAnswer] = Field(default_factory=list)
+
+    model_config = ConfigDict(validate_assignment=True)
 
 
 # Request and Response schemas
@@ -80,6 +113,9 @@ class AnalyzeRequest(BaseModel):
     )
     context: str | None = Field(
         None, max_length=1000, description="Optional personal or contextual detail"
+    )
+    behavioural_answers: list[BehaviouralAnswer] = Field(
+        default_factory=list, description="Three answered behavioural questions"
     )
 
     model_config = ConfigDict(extra="forbid")

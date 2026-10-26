@@ -37,6 +37,14 @@ export const App: React.FC = () => {
                 }
               />
               <Route
+                path="/reflect"
+                element={
+                  <ProtectedRoute>
+                    <SituationEntryPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/reflections/:id"
                 element={
                   <ProtectedRoute>

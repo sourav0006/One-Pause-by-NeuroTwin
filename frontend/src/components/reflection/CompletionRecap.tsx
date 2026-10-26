@@ -11,6 +11,7 @@ import {
   FileText,
   Compass,
   Check,
+  MessageSquare,
 } from 'lucide-react';
 
 interface CompletionRecapProps {
@@ -205,6 +206,37 @@ export const CompletionRecap: React.FC<CompletionRecapProps> = ({
           )}
         </div>
       </div>
+
+      {/* Reported Behavioural Context (Phase 2) */}
+      {session.state.behavioural_answers && session.state.behavioural_answers.length > 0 && (
+        <div className="paper-card p-6 bg-white space-y-4">
+          <div className="flex items-center justify-between border-b border-paper-200 pb-2">
+            <div className="flex items-center gap-2 text-xs font-semibold text-charcoal-800 uppercase tracking-wider">
+              <MessageSquare className="w-4 h-4 text-sage-700" />
+              <span>Reported Behavioural Context</span>
+            </div>
+            <span className="text-[10px] text-sage-800 bg-sage-50 border border-sage-200 px-2 py-0.5 rounded font-medium">
+              Source: User-Reported
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {session.state.behavioural_answers.map((ans, idx) => (
+              <div key={idx} className="p-3.5 rounded-lg bg-paper-50 border border-paper-200 space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-sage-800">
+                  {ans.theme}
+                </span>
+                <p className="text-xs font-medium text-charcoal-800 leading-snug">
+                  {ans.question}
+                </p>
+                <p className="text-xs text-charcoal-600 bg-white p-2 rounded border border-paper-200 italic">
+                  "{ans.answer}"
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 3. Chosen Response vs. Open Next Steps */}
       <div className="paper-card p-6 bg-white space-y-4">

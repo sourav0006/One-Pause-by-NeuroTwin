@@ -1,8 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import App from '../App';
 
 describe('ONE PAUSE Application Shell', () => {
+  beforeEach(() => {
+    sessionStorage.setItem('onepause_initial_pause_completed', 'true');
+  });
+
+  afterEach(() => {
+    sessionStorage.clear();
+  });
   it('renders ONE PAUSE wordmark and tagline in header and hero', () => {
     render(<App />);
     expect(screen.getByText('ONE PAUSE')).toBeInTheDocument();

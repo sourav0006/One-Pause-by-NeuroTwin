@@ -24,6 +24,8 @@ from app.schemas.reflection import (
     ClarifyRequest,
     CompleteRequest,
     HypothesisUpdateRequest,
+    QuestionsRequest,
+    QuestionsResponse,
     ReflectionResponse,
     ReportedFact,
     SaveSessionRequest,
@@ -73,6 +75,23 @@ async def _get_user_session(
     return session
 
 
+@router.post("/questions", response_model=QuestionsResponse)
+async def generate_behavioural_questions(
+    req: QuestionsRequest,
+    current_user: User = Depends(get_current_user),
+    ai_provider: BaseAIProvider = Depends(get_ai_provider),
+):
+    """Generate three tailored behavioural questions for a situation before map generation."""
+    try:
+        questions = await ai_provider.generate_behavioural_questions(
+            situation=req.situation,
+            context=req.context,
+        )
+        return QuestionsResponse(questions=questions)
+    except AIProviderException as e:
+        _handle_ai_exception(e)
+
+
 @router.post("/analyze", response_model=ReflectionResponse, status_code=status.HTTP_201_CREATED)
 async def analyze_situation(
     req: AnalyzeRequest,
@@ -85,9 +104,19 @@ async def analyze_situation(
         structured_state = await ai_provider.analyze_situation(
             situation=req.situation,
             context=req.context,
+            behavioural_answers=req.behavioural_answers,
         )
     except AIProviderException as e:
         _handle_ai_exception(e)
+
+    if len(structured_state.possible_responses) != 3:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={
+                "code": "AI_VALIDATION_ERROR",
+                "message": f"Initial reflection requires exactly 3 response options, got {len(structured_state.possible_responses)}.",
+            },
+        )
 
     # Derive short title from encounter description
     title = structured_state.encounter.description[:80] if structured_state.encounter else None
@@ -187,6 +216,30 @@ async def clarify_reflection(
             )
         )
 
+    # Invariant: Preserve behavioural answers
+    if current_state.behavioural_answers and not updated_state.behavioural_answers:
+        updated_state.behavioural_answers = current_state.behavioural_answers
+
+    # Invariant: Guarantee exactly 3 distinct possible responses are maintained
+    if len(updated_state.possible_responses) != 3:
+        if len(updated_state.possible_responses) < 3 and current_state.possible_responses:
+            existing_actions = {opt.action.strip().lower() for opt in updated_state.possible_responses}
+            for prior_opt in current_state.possible_responses:
+                if prior_opt.action.strip().lower() not in existing_actions:
+                    updated_state.possible_responses.append(prior_opt)
+                    existing_actions.add(prior_opt.action.strip().lower())
+                    if len(updated_state.possible_responses) == 3:
+                        break
+
+        if len(updated_state.possible_responses) != 3:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail={
+                    "code": "AI_VALIDATION_ERROR",
+                    "message": f"Reflection clarification requires exactly 3 response options, got {len(updated_state.possible_responses)}.",
+                },
+            )
+
     session.current_state = updated_state.model_dump()
     flag_modified(session, "current_state")
     session.updated_at = datetime.now(UTC)
@@ -278,10 +331,30 @@ async def refresh_options(
 
     try:
         new_options = await ai_provider.generate_options(state)
-        state.possible_responses = new_options
     except AIProviderException as e:
         _handle_ai_exception(e)
 
+    # Invariant: Ensure regenerated options contain exactly 3 choices
+    if not new_options or len(new_options) != 3:
+        if new_options and len(new_options) < 3 and state.possible_responses:
+            existing_actions = {opt.action.strip().lower() for opt in new_options}
+            for prior_opt in state.possible_responses:
+                if prior_opt.action.strip().lower() not in existing_actions:
+                    new_options.append(prior_opt)
+                    existing_actions.add(prior_opt.action.strip().lower())
+                    if len(new_options) == 3:
+                        break
+
+        if not new_options or len(new_options) != 3:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail={
+                    "code": "AI_VALIDATION_ERROR",
+                    "message": f"Option regeneration requires exactly 3 response options, got {len(new_options) if new_options else 0}.",
+                },
+            )
+
+    state.possible_responses = new_options
     session.current_state = state.model_dump()
     flag_modified(session, "current_state")
     session.updated_at = datetime.now(UTC)

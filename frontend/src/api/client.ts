@@ -4,7 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 35000, // 35 second client timeout (backend AI limit is 30s)
+  timeout: 50000, // 50 second client timeout (backend AI limit is 45s)
   headers: {
     'Content-Type': 'application/json',
   },

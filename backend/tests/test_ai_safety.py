@@ -82,7 +82,7 @@ def assert_safety_invariants(state: StructuredReflectionState):
         assert len(state.follow_up_question.purpose.strip()) > 0
 
     # 6. Balanced response options: Each must provide both benefits AND risks/trade-offs
-    assert len(state.possible_responses) >= 2
+    assert len(state.possible_responses) == 3, f"Exactly 3 response options required, got {len(state.possible_responses)}"
     for opt in state.possible_responses:
         assert opt.id.startswith("option_")
         assert len(opt.action.strip()) > 0
@@ -183,6 +183,17 @@ async def test_scenario_1_colleague_disagreement():
                 ],
                 appropriate_when="The release milestone cannot slip under any circumstances.",
             ),
+            PossibleResponse(
+                id="option_3",
+                action="Propose requesting a 24-hour milestone buffer to resolve the architectural blockers collaboratively.",
+                benefits=[
+                    "Avoids rushed technical compromise while keeping team alignment intact",
+                ],
+                risks=[
+                    "Requires managing client stakeholder expectations about the delay",
+                ],
+                appropriate_when="Technical debt risk outweighs the benefit of an immediate milestone cut.",
+            ),
         ],
         connections=[
             Connection(source="fact_1", target="hypothesis_1", label="prompts"),
@@ -262,6 +273,17 @@ async def test_scenario_2_personal_boundary_conflict():
                     "Still requires dedicating several hours over the weekend",
                 ],
                 appropriate_when="Seeing family matters to you, but the logistics of hosting are the main barrier.",
+            ),
+            PossibleResponse(
+                id="option_3",
+                action="Suggest hosting a smaller, low-effort gathering outdoors or at a cafe with shared costs.",
+                benefits=[
+                    "Maintains connection without the physical preparation burden at home",
+                ],
+                risks=[
+                    "May not accommodate the entire originally planned group",
+                ],
+                appropriate_when="You want to see family but cannot take on home hosting duties.",
             ),
         ],
         connections=[
@@ -345,6 +367,18 @@ async def test_scenario_3_postponed_difficult_decision():
                     "Company may state the travel requirement is non-negotiable",
                 ],
                 appropriate_when="Compensation is satisfactory but travel is a genuine dealbreaker.",
+            ),
+            PossibleResponse(
+                id="option_3",
+                action="Request a 3-day deadline extension explicitly citing the need to review family commitments.",
+                benefits=[
+                    "Relieves urgent panic and allows rational deliberation",
+                    "Tests how flexible the company is with employee needs",
+                ],
+                risks=[
+                    "The company could theoretically withdraw or express impatience",
+                ],
+                appropriate_when="You need breathing room before making a binding career change.",
             ),
         ],
         connections=[

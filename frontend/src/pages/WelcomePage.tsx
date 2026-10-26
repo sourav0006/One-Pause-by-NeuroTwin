@@ -1,11 +1,43 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { BrainIllustration } from '../components/common/BrainIllustration';
+import { PauseCountdown } from '../components/common/PauseCountdown';
 import { useAuth } from '../context/AuthContext';
 import { ArrowRight, Eye, Compass, Layers } from 'lucide-react';
 
+export const INITIAL_PAUSE_SESSION_KEY = 'onepause_initial_pause_completed';
+
 export const WelcomePage: React.FC = () => {
   const { isAuthenticated } = useAuth();
+  const [hasCompletedInitialPause, setHasCompletedInitialPause] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem(INITIAL_PAUSE_SESSION_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handlePauseComplete = useCallback(() => {
+    try {
+      sessionStorage.setItem(INITIAL_PAUSE_SESSION_KEY, 'true');
+    } catch {}
+    setHasCompletedInitialPause(true);
+  }, []);
+
+  // Phase 1: Initial-entry 8-second cognitive countdown before revealing homepage
+  if (!hasCompletedInitialPause) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center py-12 px-4 sm:px-6">
+        <div className="paper-card p-8 sm:p-12 max-w-lg w-full bg-white text-center shadow-md">
+          <PauseCountdown
+            durationSeconds={8}
+            onComplete={handlePauseComplete}
+            onSkip={handlePauseComplete}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col justify-center items-center py-12 px-4 sm:px-6">

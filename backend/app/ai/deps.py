@@ -13,6 +13,13 @@ def get_ai_provider() -> BaseAIProvider:
        return DevDemoAIProvider (clearly labeled fixtures).
     3. Otherwise return GeminiProvider (which will raise AIProviderConfigError safely).
     """
+    if (
+        settings.AI_PROVIDER == "demo"
+        and settings.ENVIRONMENT == "development"
+        and settings.ENABLE_DEV_DEMO_AI
+    ):
+        return DevDemoAIProvider()
+
     if settings.GEMINI_API_KEY and settings.GEMINI_API_KEY.strip():
         return GeminiProvider()
 

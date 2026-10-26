@@ -11,6 +11,8 @@ to ensure they are never mistaken for live Gemini model output.
 from app.ai.base import AIProviderConfigError, BaseAIProvider
 from app.core.config import settings
 from app.schemas.reflection import (
+    BehaviouralAnswer,
+    BehaviouralQuestion,
     Connection,
     Encounter,
     FollowUpQuestion,
@@ -38,8 +40,54 @@ class DevDemoAIProvider(BaseAIProvider):
                 "or configure GEMINI_API_KEY for live reflections."
             )
 
-    async def analyze_situation(
+    async def generate_behavioural_questions(
         self, situation: str, context: str | None = None
+    ) -> list[BehaviouralQuestion]:
+        """Generate three neutral, concise behavioural questions tailored to the situation."""
+        return [
+            BehaviouralQuestion(
+                id="q1",
+                theme="Immediate Focus & Trigger",
+                question="Looking back at this moment, what aspect felt most prominent in shaping your immediate reaction?",
+                options=[
+                    "The compressed deadline or urgency",
+                    "How the request was communicated without checking bandwidth",
+                    "Conflict with my existing commitments and delivery quality",
+                    "None of these / Something else",
+                ],
+                placeholder="e.g. The sudden expectation to absorb urgent work without discussing tradeoffs...",
+            ),
+            BehaviouralQuestion(
+                id="q2",
+                theme="Influencing Factors",
+                question="Might any personal or situational factors (such as workload, fatigue, stakes, or pacing) have influenced your capacity in that moment?",
+                options=[
+                    "Heavy ongoing workload and high delivery expectations",
+                    "Pressure to maintain rapport and appear dependable",
+                    "Fatigue or lack of buffer time to think clearly",
+                    "None of these / I felt rested and composed",
+                ],
+                placeholder="e.g. High quarterly delivery pressure and worry about burning out...",
+            ),
+            BehaviouralQuestion(
+                id="q3",
+                theme="Prior Response Patterns",
+                question="When faced with similar priority conflicts or requests in the past, how have you typically tended to respond?",
+                options=[
+                    "Saying yes quickly to maintain harmony, then feeling overloaded",
+                    "Delaying or agonizing over my response before deciding",
+                    "Pushing back firmly right away",
+                    "It varies depending on the person / None of these",
+                ],
+                placeholder="e.g. I tend to agree immediately out of habit, then struggle with workload later...",
+            ),
+        ]
+
+    async def analyze_situation(
+        self,
+        situation: str,
+        context: str | None = None,
+        behavioural_answers: list[BehaviouralAnswer] | None = None,
     ) -> StructuredReflectionState:
         """Return a deterministic, structured reflection fixture labeled [DEV FIXTURE]."""
         # Truncate clean snippet for display
@@ -47,26 +95,38 @@ class DevDemoAIProvider(BaseAIProvider):
         if len(snippet) > 80:
             snippet = snippet[:77] + "..."
 
+        reported_facts = [
+            ReportedFact(
+                id="fact_1",
+                text=f"[DEV FIXTURE] Reported situation: {situation.strip()[:180]}",
+                source="user",
+            ),
+            ReportedFact(
+                id="fact_2",
+                text=(
+                    f"[DEV FIXTURE] Context: {context.strip()[:140]}"
+                    if context and context.strip()
+                    else "[DEV FIXTURE] The user has paused to evaluate next steps before taking action."
+                ),
+                source="user",
+            ),
+        ]
+
+        if behavioural_answers:
+            for idx, ans in enumerate(behavioural_answers, start=3):
+                reported_facts.append(
+                    ReportedFact(
+                        id=f"fact_{idx}",
+                        text=f"[DEV FIXTURE] Stated {ans.theme.lower()}: {ans.answer.strip()[:140]}",
+                        source="user",
+                    )
+                )
+
         return StructuredReflectionState(
             encounter=Encounter(
                 description=f"[DEV FIXTURE] Pausing to examine: {snippet}"
             ),
-            reported_facts=[
-                ReportedFact(
-                    id="fact_1",
-                    text=f"[DEV FIXTURE] Reported situation: {situation.strip()[:180]}",
-                    source="user",
-                ),
-                ReportedFact(
-                    id="fact_2",
-                    text=(
-                        f"[DEV FIXTURE] Context: {context.strip()[:140]}"
-                        if context and context.strip()
-                        else "[DEV FIXTURE] The user has paused to evaluate next steps before taking action."
-                    ),
-                    source="user",
-                ),
-            ],
+            reported_facts=reported_facts,
             hypotheses=[
                 Hypothesis(
                     id="hypothesis_1",
@@ -149,6 +209,7 @@ class DevDemoAIProvider(BaseAIProvider):
                 Connection(source="hypothesis_2", target="unknown_2", label="suggests checking"),
                 Connection(source="goal_1", target="option_2", label="supported by"),
             ],
+            behavioural_answers=behavioural_answers or [],
         )
 
     async def clarify_reflection(
@@ -183,6 +244,7 @@ class DevDemoAIProvider(BaseAIProvider):
             follow_up_question=None,  # Answered
             possible_responses=current_state.possible_responses,
             connections=current_state.connections,
+            behavioural_answers=current_state.behavioural_answers,
         )
 
     async def generate_options(

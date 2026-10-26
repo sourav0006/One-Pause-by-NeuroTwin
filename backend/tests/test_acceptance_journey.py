@@ -87,7 +87,7 @@ async def test_full_acceptance_journey_16_steps(client: AsyncClient, monkeypatch
     assert len(state["hypotheses"]) >= 2, "Tentative hypotheses must be formed"
     assert len(state["unknowns"]) >= 2, "Missing context/unknowns must be highlighted"
     assert len(state["goals"]) >= 1, "Goals must be identified"
-    assert len(state["possible_responses"]) >= 3, "Balanced response options must be generated"
+    assert len(state["possible_responses"]) == 3, "Exactly 3 balanced response options must be generated"
     assert state["follow_up_question"] is not None, "A focused follow-up question must exist"
     assert "[DEV FIXTURE]" in state["encounter"]["description"], "Dev fixtures must be clearly labeled"
 
@@ -134,7 +134,7 @@ async def test_full_acceptance_journey_16_steps(client: AsyncClient, monkeypatch
 
     # STEP 9: Explore response options without being forced to choose one
     options = clarified_state["possible_responses"]
-    assert len(options) >= 3
+    assert len(options) == 3, "Exactly 3 response options must be present after clarification"
     for opt in options:
         assert len(opt["benefits"]) >= 1, "Each option must contain explicit benefits"
         assert len(opt["risks"]) >= 1, "Each option must contain explicit trade-offs/risks"
