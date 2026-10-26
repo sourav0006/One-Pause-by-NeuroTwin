@@ -1,3 +1,5 @@
+import json
+
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -9,7 +11,7 @@ class Settings(BaseSettings):
 
     # CORS
     FRONTEND_ORIGIN: str = "http://localhost:5173"
-    BACKEND_CORS_ORIGINS: list[str] = [
+    BACKEND_CORS_ORIGINS: list[str] | str = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:3000",
@@ -20,10 +22,18 @@ class Settings(BaseSettings):
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: str | list[str]) -> list[str]:
-        if isinstance(v, str) and not v.startswith("["):
+        if isinstance(v, str):
+            v_stripped = v.strip()
+            if v_stripped.startswith("[") and v_stripped.endswith("]"):
+                try:
+                    parsed = json.loads(v_stripped)
+                    if isinstance(parsed, list):
+                        return [str(i).strip() for i in parsed if str(i).strip()]
+                except json.JSONDecodeError:
+                    pass
             return [i.strip() for i in v.split(",") if i.strip()]
-        elif isinstance(v, (list, str)):
-            return v  # type: ignore
+        elif isinstance(v, list):
+            return [str(i).strip() for i in v if str(i).strip()]
         return [
             "http://localhost:5173",
             "http://127.0.0.1:5173",
@@ -66,6 +76,11 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_settings(self) -> "Settings":
+        if isinstance(self.BACKEND_CORS_ORIGINS, str):
+            self.BACKEND_CORS_ORIGINS = [
+                i.strip() for i in self.BACKEND_CORS_ORIGINS.split(",") if i.strip()
+            ]
+
         if self.FRONTEND_ORIGIN and self.FRONTEND_ORIGIN not in self.BACKEND_CORS_ORIGINS:
             self.BACKEND_CORS_ORIGINS.append(self.FRONTEND_ORIGIN)
 

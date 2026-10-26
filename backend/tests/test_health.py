@@ -37,20 +37,51 @@ def test_settings_database_url_normalization():
     assert s3.DATABASE_URL.startswith("postgresql+asyncpg://")
 
 
-def test_settings_cors_and_capacitor_origins():
+def test_settings_cors_defaults_and_inclusion():
     from app.core.config import Settings
 
     # Default includes local dev and Capacitor origins
     s_default = Settings()
+    assert isinstance(s_default.BACKEND_CORS_ORIGINS, list)
     assert "https://localhost" in s_default.BACKEND_CORS_ORIGINS
     assert "capacitor://localhost" in s_default.BACKEND_CORS_ORIGINS
+    assert "http://localhost:5173" in s_default.BACKEND_CORS_ORIGINS
 
-    # Comma-separated string from environment variable
+    # Direct instantiation with comma-separated string
     s_custom = Settings(
         BACKEND_CORS_ORIGINS="https://app.onepause.com, https://localhost",
         FRONTEND_ORIGIN="https://frontend.render.com",
     )
+    assert isinstance(s_custom.BACKEND_CORS_ORIGINS, list)
     assert "https://app.onepause.com" in s_custom.BACKEND_CORS_ORIGINS
     assert "https://localhost" in s_custom.BACKEND_CORS_ORIGINS
     assert "https://frontend.render.com" in s_custom.BACKEND_CORS_ORIGINS
 
+
+def test_cors_env_comma_separated_parsing(monkeypatch):
+    """Regression test: Render sets BACKEND_CORS_ORIGINS as a comma-separated env var."""
+    from app.core.config import Settings
+
+    monkeypatch.setenv("BACKEND_CORS_ORIGINS", "https://localhost,capacitor://localhost,https://onepause.onrender.com")
+    monkeypatch.setenv("FRONTEND_ORIGIN", "https://frontend.onrender.com")
+
+    s = Settings()
+    assert isinstance(s.BACKEND_CORS_ORIGINS, list)
+    assert "https://localhost" in s.BACKEND_CORS_ORIGINS
+    assert "capacitor://localhost" in s.BACKEND_CORS_ORIGINS
+    assert "https://onepause.onrender.com" in s.BACKEND_CORS_ORIGINS
+    assert "https://frontend.onrender.com" in s.BACKEND_CORS_ORIGINS
+    assert "*" not in s.BACKEND_CORS_ORIGINS
+
+
+def test_cors_env_json_array_parsing(monkeypatch):
+    """Verify that JSON array string in BACKEND_CORS_ORIGINS environment variable is parsed."""
+    from app.core.config import Settings
+
+    monkeypatch.setenv("BACKEND_CORS_ORIGINS", '["https://api.onepause.com", "https://localhost"]')
+
+    s = Settings()
+    assert isinstance(s.BACKEND_CORS_ORIGINS, list)
+    assert "https://api.onepause.com" in s.BACKEND_CORS_ORIGINS
+    assert "https://localhost" in s.BACKEND_CORS_ORIGINS
+    assert "*" not in s.BACKEND_CORS_ORIGINS
